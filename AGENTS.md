@@ -12,7 +12,7 @@
 
 2. **Follow the conventions** in SPEC.md. Do not invent new patterns that contradict what is already established.
 
-3. **When you make a non-trivial design decision**, update SPEC.md:
+3. **When you make a non-trivial design decision**, update SPEC.md first:
    - Add the decision to the **Decision Log** table with date, what was decided, rationale, and trade-offs.
    - If the decision changes the architecture, update the **Architecture** section.
    - If the decision introduces a new constraint, update the **Constraints** section.
@@ -20,9 +20,11 @@
 
 4. **When you discover ambiguity** that needs a decision, add it to **Open Questions**.
 
+5. **Do not implement spec changes until the user approves them.** Update the spec, present the changes, and wait for explicit approval before writing implementation code.
+
 ### After any task
 
-5. **Verify SPEC.md is current.** If the code disagrees with the spec, update whichever is wrong.
+6. **Verify SPEC.md is current.** If the code disagrees with the spec, update whichever is wrong.
 
 ## General rules
 
