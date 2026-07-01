@@ -29,6 +29,12 @@
 
    **When in doubt, treat it as a design decision.** The cost of an unnecessary spec update is low. The cost of spec drift is high.
 
+   **Additionally, update `README.md` when:**
+   - The project layout changes (new files, directories, or modules)
+   - A new major feature is added, removed, or changed
+   - A new `make` target or command is introduced
+   - The UI changes in user-visible ways (new screens, navigation, behavior)
+
 4. **Before writing any new file**, check:
    - Is it listed in SPEC.md under Source modules? If not, update the spec first.
    - Does it depend on a library not in the Tech Stack? If so, update the spec first.
@@ -47,6 +53,12 @@
    - UI screens listed match what exists in `ui/screens/` and `web/templates/`
    - Decision Log has an entry for every non-bugfix change made
    - If anything disagrees, update the spec.
+
+8. **Verify README.md is current.** Check:
+   - Project layout diagram matches actual directory structure
+   - Commands table lists every `make` target
+   - Interfaces section reflects current UI screens, navigation keys, and behavior
+   - If anything disagrees, update the README.
 
 ## General rules
 
