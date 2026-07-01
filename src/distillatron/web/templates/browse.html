@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div id="search-bar">
+    <input
+        type="search"
+        name="q"
+        placeholder="Search articles…"
+        hx-get="/web/search"
+        hx-trigger="keyup changed delay:300ms"
+        hx-target="#article-list"
+        hx-indicator="#search-indicator"
+    >
+    <span id="search-indicator" class="htmx-indicator">Searching…</span>
+</div>
+
+<div id="article-list" hx-get="/web/articles" hx-trigger="load">
+    <p class="loading">Loading articles…</p>
+</div>
+
+{% endblock %}

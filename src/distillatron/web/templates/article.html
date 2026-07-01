@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block content %}
+
+<article>
+    <h2>{{ article.title }}</h2>
+    <div class="meta">
+        <span>{{ article.source }}</span>
+        {% if article.scraped_at %}<span>· {{ article.scraped_at }}</span>{% endif %}
+    </div>
+
+    <div class="topics">
+        {% for tag in article.topics %}
+        <a href="#"
+           hx-get="/web/articles?topic={{ tag | urlencode }}"
+           hx-target="#article-list"
+           class="tag">{{ tag }}</a>
+        {% endfor %}
+    </div>
+
+    <div class="body">
+        {{ article.content | safe }}
+    </div>
+
+    <div class="actions">
+        <a href="/">← Back to articles</a>
+        · <a href="{{ article.url }}" target="_blank" rel="noopener">Open original →</a>
+    </div>
+</article>
+
+{% endblock %}

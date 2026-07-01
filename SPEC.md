@@ -21,14 +21,16 @@ make build / CLI          ← idempotent: skips already-indexed URLs
      └── manifest.md ──────► update: [x] Indexed + timestamp under each processed URL
      │
      ▼
-Textual UI               ← TUI in terminal (textual run) or browser (textual-serve)
-     │                      Single codebase, dual output.
-     ├── Search screen    ← query → embed → ANN search → ranked results
-     ├── Article screen   ← full content + metadata + topic tags
-     └── Topics screen    ← browse topics → filter articles
+Textual TUI               ← terminal: make tui. Keyboard-first, direct imports.
+     │                      Browse screen (topics sidebar + article table + search)
+     │                      Article screen (full content)
      │
      ▼
-FastAPI API              ← REST API for headless/automation: /search, /articles, /articles/{id}, /topics, /build
+FastAPI                   ← serve both web UI and REST API: make up
+     │
+     ├── Web UI (HTMX)    ← / → browse page, /web/... → fragments, Jinja2 templates
+     │                      Read-only: no build action.
+     ├── REST API         ← /search, /articles, /articles/{id}, /topics, /build
      │
      ▼
 LanceDB                  ← embedded mode, data/ directory
@@ -46,8 +48,9 @@ LanceDB                  ← embedded mode, data/ directory
 | Embeddings         | fastembed (local) or OpenAI text-embedding-3-small | fastembed default: free, offline, ONNX runtime, 384d vectors. OpenAI optional for higher quality (1536d). EMBEDDING_BACKEND env var switches. |
 | Classification     | DeepSeek (via OpenAI SDK)                           | OpenAI-compatible endpoint. deepseek-v4-flash. DEEPSEEK_API_KEY from env.                                                                       |
 | Scraping           | Firecrawl SDK (V1)                                  | V1FirecrawlApp. Handles JS pages, returns clean markdown. FIRECRAWL_API_KEY from env.                                                           |
-| UI                 | Textual + textual-serve                             | Single Python codebase runs in terminal (TUI) and browser (WebSocket). Consistent UX across both modes.                                          |
-| Notebooks          | Jupyter                                             | Iterative experimentation, shared kernel with project venv                                                                                      |
+| UI (TUI)           | Textual                                             | Terminal-native, keyboard navigation, direct module imports. Build enabled.                                              |
+| UI (Web)           | HTMX + Jinja2, served by FastAPI                    | Lightweight, no build step. REST API for data. Read-only (no build action). Same layout as TUI.                          |
+| Notebooks          | Jupyter                                             | Iterative experimentation, shared kernel with project venv                                                                 |
 | Container runtime  | Docker + Docker Compose                             | Local dev mirrors production topology                                                                                                           |
 | Infrastructure     | Terraform                                           | Cloud-agnostic modules, provider chosen at deploy time                                                                                          |
 | Frontend           | Deferred — replaced by Textual UI                   | Textual covers TUI + browser; no separate web frontend needed                                                                                   |
@@ -68,9 +71,10 @@ LanceDB                  ← embedded mode, data/ directory
 | `src/main.py`        | FastAPI app entry point, lifespan, router registration                       |
 | `src/ui/app.py`      | Textual App class, SCREENS, key bindings, CSS_PATH                           |
 | `src/ui/app.css`     | Styling: dark theme, layout, widget classes                                  |
-| `src/ui/screens/`    | Three screens: search, article detail, topic browser                         |
-| `src/ui/widgets/`    | Reusable widgets: search bar, article list                                   |
-| `src/ui/serve.py`    | textual-serve entry point for browser mode                                   |
+| `src/ui/screens/`    | Two screens: browse (topics + table + search), article detail                |
+| `src/web/routes.py`  | Web routes: /, /web/topics, /web/articles, /web/search, /web/articles/{id}   |
+| `src/web/templates/` | Jinja2 templates: base, browse, article, article_list, search_results, topic_list |
+| `src/web/static/`    | CSS for web UI                                                                |
 
 ## LanceDB schema — `articles` table
 
@@ -96,26 +100,39 @@ LanceDB                  ← embedded mode, data/ directory
 | GET    | /topics                               | All topics with article counts             |
 | POST   | /build                                | Trigger ingest pipeline (process manifest) |
 
+## Web endpoints
+
+Web UI is served by the same FastAPI process. All web routes are read-only.
+
+| Method | Path                           | Description                                  |
+| ------ | ------------------------------ | -------------------------------------------- |
+| GET    | /                              | Main browse page (topics sidebar + article table + search) |
+| GET    | /web/topics                    | Topic list fragment (HTMX)                   |
+| GET    | /web/articles?topic=...        | Article list fragment (HTMX)                 |
+| GET    | /web/search?q=...&topic=...    | Search results fragment (HTMX)               |
+| GET    | /web/articles/{id}             | Full article detail page                     |
+
+Article titles link to the original URL. A "details" link navigates to the Distillatron article page.
+
 ## UI
 
-Textual provides a dual-mode interface for searching and browsing articles.
+Two separate modalities sharing a common layout: topics sidebar + article table + search bar.
 
-| Mode           | Command                  | How it works                                                |
-| -------------- | ------------------------ | ----------------------------------------------------------- |
-| TUI (terminal) | `make tui`               | Runs natively in terminal with full keyboard navigation     |
-| Browser        | `make web`               | textual-serve wraps the app in a WebSocket server           |
+| Mode   | Command    | Framework        | Data access       | Build action |
+| ------ | ---------- | ---------------- | ----------------- | ------------ |
+| TUI    | `make tui` | Textual          | Direct imports    | Yes          |
+| Web    | `make up`  | HTMX + Jinja2    | REST API          | No (read-only) |
 
-### Screens
+### TUI screens
 
-| Screen     | Layout                                                   | Navigation                                 |
-| ---------- | -------------------------------------------------------- | ------------------------------------------ |
-| Search     | Search bar → topic filter → results list + content preview | `/` focus search, `Enter` view, `t` topics, `b` build, `q` quit |
-| Article    | Full markdown content, metadata header, topic tags       | `Esc` back, `o` open URL                  |
-| Topics     | Grid of topic tags with article counts                   | `Enter` filter, `Esc` back                |
+| Screen  | Layout | Navigation |
+| ------- | ------ | ---------- |
+| Browse  | Topics sidebar → article DataTable (Title, Topics, Source) + hidden search bar | `/` toggle search, click topic to filter, `Enter` view, `t` reset, `b` build, `q` quit |
+| Article | Full markdown content, metadata, topic tags | `Esc` back, `o` open original URL |
 
-### Data access
+### TUI data access
 
-The TUI imports `distillatron.search`, `distillatron.db`, and `distillatron.embed` directly — no network calls for search. The REST API (`/search`, `/articles`, etc.) remains available for headless and automation use. Browser mode uses textual-serve which wraps the same TUI app in a WebSocket server.
+The TUI imports `distillatron.search`, `distillatron.db`, and `distillatron.embed` directly — no network calls for search. Web mode calls the REST API endpoints.
 
 ## Manifest format (`manifest.md`)
 
@@ -134,7 +151,7 @@ todos. The build system updates the manifest in-place after processing.
 
 ## Conventions
 
-- **Project layout**: `src/distillatron/` for application code (includes `ui/` subpackage),
+- **Project layout**: `src/distillatron/` for application code (includes `ui/` and `web/` subpackages),
   `tests/` for tests, `notebooks/` for Jupyter experimentation, `terraform/` for infra,
   `docker/` for Dockerfiles and compose config.
   `manifest.md` at project root (gitignored). `MANIFEST.md.example` committed as reference.
@@ -183,7 +200,10 @@ todos. The build system updates the manifest in-place after processing.
 | 2026-06-20 | Open-ended topics with normalization  | LLM generates freeform tags, normalization pass merges synonyms. More organic than predefined taxonomy.              | Extra LLM call for normalization. Some inconsistency may persist.           |
 | 2026-06-20 | CLI-only build trigger (`make build`) | Simplest for solo use. No auth needed on build endpoint.                                                             | No remote trigger. Must be on the machine.                                  |
 | 2026-06-29 | fastembed for local embeddings        | OpenAI quota issues blocked development. fastembed uses ONNX, no GPU, sub-100MB download, 384d vectors, free, offline. | Lower quality than OpenAI embeddings. Must clear DB when switching backends (dimension mismatch). |
-| 2026-06-29 | Textual + textual-serve for UI        | Single Python codebase runs in terminal (TUI) and browser (WebSocket). No separate frontend framework. Consistent UX.  | Terminal-first; browser rendering is emulation, not native HTML/CSS. May feel slightly different from a traditional web app. |
+| 2026-06-29 | Textual for TUI                        | Native terminal UI with keyboard navigation, direct imports. Fast, no network needed for search.     | Terminal-only; no browser access from same code.                                  |
+| 2026-06-29 | HTMX + Jinja2 for web UI               | Lightweight server-rendered web UI served by FastAPI. No JS framework build step. Read-only.          | Requires server round-trips; less interactive than SPA.                           |
+| 2026-06-29 | Separate TUI and web code paths        | Textual's browser mode (textual-serve) felt like an emulation, not a useful web interface. Dedicated implementations give better UX in each modality. | Two codebases to maintain; shared layout spec keeps them aligned.                  |
+| 2026-07-01 | Metadata title extraction              | Firecrawl V1 SDK returns `result.title` as None; actual title is in `result.metadata.title`. Fixed scrape.py to extract from metadata. | Relies on page metadata being present; falls back to URL if absent.                |
 | 2026-06-29 | deepseek-v4-flash for classification  | User's preferred DeepSeek model. Faster and cheaper than GPT-4o.                                                       | Less tested in production than GPT-4o. Prompt compatibility may differ.      |
 | 2026-06-29 | LanceModel for DB schema              | LanceDB 0.33+ requires `lancedb.pydantic.LanceModel` for table schema, not raw `pydantic.BaseModel`.                   | Tighter coupling to LanceDB's type system.                                   |
 | 2026-06-29 | V1FirecrawlApp SDK                    | firecrawl-py 4.x renamed API: `FirecrawlApp` → `V1FirecrawlApp`. Response is Pydantic model, not dict.                 | SDK version lock-in. Breaking changes on major version bumps.                |
@@ -197,4 +217,4 @@ todos. The build system updates the manifest in-place after processing.
 - Authentication: none for now, but what pattern when needed (JWT, OAuth2, API keys)?
 - Notebook conventions: should notebooks use `uv run` kernel or installed ipykernel from venv?
 - Manifest format extensibility: how to add future todo types without breaking the parser?
-- UI data access: should TUI mode use direct imports or always go through FastAPI endpoints for consistency?
+- UI data access: TUI uses direct imports, web calls REST API — resolved.

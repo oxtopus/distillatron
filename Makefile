@@ -1,4 +1,4 @@
-.PHONY: install lint fmt test build up kernel notebook docker-build docker-up clean
+.PHONY: install lint fmt test build up tui kernel notebook docker-build docker-up clean
 
 install:
 	uv sync
@@ -16,7 +16,10 @@ build:
 	uv run python -m distillatron.ingest
 
 up:
-	uv run uvicorn distillatron.main:app --host 127.0.0.1 --port 8000
+	uv run uvicorn distillatron.main:app --host 127.0.0.1 --port 8000 --reload
+
+tui:
+	uv run python -m distillatron.ui.app
 
 kernel:
 	uv run ipython kernel install --user --name=distillatron --display-name="Python (distillatron)"

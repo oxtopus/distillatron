@@ -1,0 +1,39 @@
+{% if topic %}
+<p class="filter-info">Filtered by: <strong>{{ topic }}</strong> · <a href="#" hx-get="/web/articles" hx-target="#article-list">clear</a></p>
+{% endif %}
+
+{% if articles %}
+<table id="articles-table">
+    <thead>
+        <tr>
+            <th>Title</th>
+            <th>Topics</th>
+            <th>Source</th>
+        </tr>
+    </thead>
+    <tbody>
+    {% for a in articles %}
+        <tr>
+            <td>
+                <a href="{{ a.url }}" class="article-link" target="_blank" rel="noopener">
+                    {{ a.title }}
+                </a>
+                <a href="/web/articles/{{ a.id }}" class="detail-link">details</a>
+            </td>
+            <td class="topics-cell">
+                {% for tag in a.topics.split(", ") %}
+                <a href="#"
+                   hx-get="/web/articles?topic={{ tag | urlencode }}"
+                   hx-target="#article-list"
+                   class="tag">{{ tag }}</a>
+                {% endfor %}
+            </td>
+            <td class="source-cell">{{ a.source }}</td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
+<p class="count">{{ total }} article{{ "s" if total != 1 else "" }}</p>
+{% else %}
+<p class="empty">No articles found.</p>
+{% endif %}

@@ -18,13 +18,35 @@
    - If the decision introduces a new constraint, update the **Constraints** section.
    - If the decision answers an open question, move it from **Open Questions** to the **Decision Log**.
 
-4. **When you discover ambiguity** that needs a decision, add it to **Open Questions**.
+   **A design decision includes, but is not limited to:**
+   - Adding, removing, or replacing a dependency
+   - Creating a new source module, package, or file
+   - Changing the architecture diagram (how components connect or data flows)
+   - Adding or removing a route, endpoint, or UI screen
+   - Changing a technology choice (e.g. swapping libraries, frameworks, or patterns)
+   - Changing a data model, schema, or storage format
+   - Splitting or merging modules, packages, or responsibilities
 
-5. **Do not implement spec changes until the user approves them.** Update the spec, present the changes, and wait for explicit approval before writing implementation code.
+   **When in doubt, treat it as a design decision.** The cost of an unnecessary spec update is low. The cost of spec drift is high.
+
+4. **Before writing any new file**, check:
+   - Is it listed in SPEC.md under Source modules? If not, update the spec first.
+   - Does it depend on a library not in the Tech Stack? If so, update the spec first.
+   - Does it introduce a new endpoint, screen, or data path? If so, update the Architecture or relevant section first.
+
+5. **When you discover ambiguity** that needs a decision, add it to **Open Questions**.
+
+6. **Do not implement spec changes until the user approves them.** Update the spec, present the changes, and wait for explicit approval before writing implementation code.
 
 ### After any task
 
-6. **Verify SPEC.md is current.** If the code disagrees with the spec, update whichever is wrong.
+7. **Verify SPEC.md is current.** Compare every section against the code:
+   - Architecture diagram matches actual component wiring
+   - Tech Stack lists every dependency in `pyproject.toml`
+   - Source modules lists every file in `src/`
+   - UI screens listed match what exists in `ui/screens/` and `web/templates/`
+   - Decision Log has an entry for every non-bugfix change made
+   - If anything disagrees, update the spec.
 
 ## General rules
 

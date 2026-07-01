@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Distillatron</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+</head>
+<body hx-boost="true">
+    <header>
+        <h1>Distillatron</h1>
+        <span class="subtitle">news article indexing &amp; semantic search</span>
+    </header>
+
+    <div id="layout">
+        <nav id="sidebar">
+            <h2>Topics</h2>
+            <div id="topic-list" hx-get="/web/topics" hx-trigger="load">
+                <p class="loading">Loading…</p>
+            </div>
+        </nav>
+
+        <main id="content">
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+</body>
+</html>

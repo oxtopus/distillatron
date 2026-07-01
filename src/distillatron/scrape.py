@@ -10,6 +10,7 @@ def scrape_url(url: str, api_key: str) -> tuple[str, str]:
     """
     app = V1FirecrawlApp(api_key=api_key)
     result = app.scrape_url(url, formats=["markdown"])
-    title = result.title or url
+    metadata = result.metadata or {}
+    title = metadata.get("title") or metadata.get("og:title") or url
     content = result.markdown or ""
     return title, content

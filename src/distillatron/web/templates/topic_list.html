@@ -1,0 +1,24 @@
+<ul>
+    <li>
+        <a href="#"
+           hx-get="/web/articles"
+           hx-target="#article-list"
+           class="topic-link {% if not topic %}active{% endif %}">
+            All ({{ total }})
+        </a>
+    </li>
+    {% for t in topics %}
+    <li>
+        <a href="#"
+           hx-get="/web/articles?topic={{ t.name | urlencode }}"
+           hx-target="#article-list"
+           class="topic-link {% if topic == t.name %}active{% endif %}">
+            {{ t.name }} ({{ t.count }})
+        </a>
+    </li>
+    {% endfor %}
+</ul>
+
+{% if not topics %}
+<p class="empty">No topics yet. Run a build to index articles.</p>
+{% endif %}
